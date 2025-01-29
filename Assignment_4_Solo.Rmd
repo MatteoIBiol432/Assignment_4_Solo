@@ -123,4 +123,10 @@ cleaned_data <- data.frame(Predicted = rf_predictions_binary_clean, Actual = act
 head(cleaned_data)
 varImpPlot(rf_model_binary, main = "Feature Importance for Cancer vs. Normal", cex = 0.5, xpd = TRUE)
 ```
+Il_8 and Il_6
 
+Interleukin-8 (IL-8): IL-8 is a pro-inflammatory chemokine that plays a critical role in tumor progression by promoting angiogenesis.
+
+Interleukin-6 (IL-6): IL-6 is a cytokine involved in immune response and inflammation but is also known to contribute to cancer development. It promotes tumor proliferation.
+
+This model appears promising for distinguishing cancerous from normal samples based on protein biomarkers in the blood. IL-6 and IL-8 are well-established biomarkers associated with inflammation and tumor progression, making them useful for early cancer detection.
