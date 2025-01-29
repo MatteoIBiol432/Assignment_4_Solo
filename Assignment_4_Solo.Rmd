@@ -5,26 +5,122 @@ date: "2025-01-28"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+Matteo Ienzi 20270101
+Done alone as I was sick and unable to meet with group
+
+```{r}
+data <- read.csv("./Cohen_CANCERSEEK_liquid_biopsy_2018_modified.csv")
+
+str(data)
+sum(is.na(data))
+summary(data)
 ```
 
-## R Markdown
+```{r}
+boxplot(data[, 5:42])  # Assuming columns 5 to 42 contain protein concentration data
+```
+ In Random Forest models, normalization is not required because the algorithm is based on decision trees, which are not sensitive to the scale of the data.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+dim(data)
+table(data$Tumor_type)
 ```
 
-## Including Plots
+```{r}
+normal_samples <- sum(data$Tumor_type == "Normal")
+tumor_samples <- nrow(data) - normal_samples
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+cat("Number of normal samples:", normal_samples, "\n")
+cat("Number of tumor samples:", tumor_samples, "\n")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+train_data <- data[seq(1, nrow(data), by=2), ]
+test_data <- data[seq(2, nrow(data), by=2), ]
+
+dim(train_data)
+dim(test_data)
+```
+
+```{r}
+train_data$Tumor_type <- as.factor(train_data$Tumor_type)
+train_data_subset <- train_data[, c("Tumor_type", colnames(train_data)[5:42])]
+str(train_data_subset)
+```
+
+```{r}
+library(tree)
+model <- tree(Tumor_type ~ ., data = train_data_subset)
+summary(model)
+par(mar = c(1, 1, 1, 1))
+plot(model)
+text(model, pretty = 0, cex = 0.5, xpd = TRUE)
+```
+What protein feature was most influential for classifying samples?
+sHER2_aEGFR2_sErbB2
+
+```{r}
+test_data$Tumor_type <- as.factor(test_data$Tumor_type)
+test_data_subset <- test_data[, c("Tumor_type", colnames(test_data)[5:42])]
+
+predictions <- predict(model, newdata = test_data_subset, type = "class")
+
+confusion_matrix <- table(Predicted = predictions, Actual = test_data$Tumor_type)
+confusion_matrix
+```
+
+```{r}
+misclassification_rate <- sum(predictions != test_data$Tumor_type) / length(predictions)
+misclassification_rate
+```
+
+```{r}
+library(randomForest)
+rf_model <- randomForest(Tumor_type ~ ., data = train_data_subset, importance = TRUE)
+rf_model
+```
+
+```{r}
+rf_predictions <- predict(rf_model, newdata = test_data_subset)
+confusion_matrix_rf <- table(Predicted = rf_predictions, Actual = test_data$Tumor_type)
+confusion_matrix_rf
+
+misclassification_rate_rf <- sum(rf_predictions != test_data$Tumor_type) / length(rf_predictions)
+misclassification_rate_rf
+```
+
+```{r}
+importance_rf <- importance(rf_model)
+varImpPlot(rf_model, main = "Feature Importance in Random Forest Model", cex = 0.5, xpd = TRUE)
+```
+
+```{r}
+train_data_subset$binary <- ifelse(train_data_subset$Tumor_type == "Normal", "Normal", "Cancer")
+test_data_subset$binary <- ifelse(test_data_subset$Tumor_type == "Normal", "Normal", "Cancer")
+
+train_data_subset$binary <- as.factor(train_data_subset$binary)
+test_data_subset$binary <- as.factor(test_data_subset$binary)
+rf_model_binary <- randomForest(binary ~ ., data = train_data_subset, importance = TRUE)
+ rf_model_binary
+```
+
+```{r}
+sum(is.na(rf_predictions_binary))
+sum(is.na(test_data_subset$binary))
+valid_indices <- complete.cases(rf_predictions_binary, test_data_subset$binary)
+rf_predictions_binary_clean <- rf_predictions_binary[valid_indices]
+actual_binary_clean <- test_data_subset$binary[valid_indices]
+confusion_matrix_rf_binary <- table(Predicted = rf_predictions_binary_clean, Actual = actual_binary_clean)
+confusion_matrix_rf_binary
+misclassification_rate_rf_binary <- sum(rf_predictions_binary_clean != actual_binary_clean) / length(rf_predictions_binary_clean)
+misclassification_rate_rf_binary
+accuracy_rf_binary <- sum(rf_predictions_binary_clean == actual_binary_clean) / length(rf_predictions_binary_clean)
+accuracy_rf_binary
+library(irr)
+kappa_score <- kappa2(data.frame(rf_predictions_binary_clean, actual_binary_clean))
+kappa_score$value
+cleaned_data <- data.frame(Predicted = rf_predictions_binary_clean, Actual = actual_binary_clean)
+head(cleaned_data)
+varImpPlot(rf_model_binary, main = "Feature Importance for Cancer vs. Normal", cex = 0.5, xpd = TRUE)
+```
+
