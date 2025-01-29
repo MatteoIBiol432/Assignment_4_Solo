@@ -7,6 +7,7 @@ output: html_document
 
 Matteo Ienzi 20270101
 Done alone as I was sick and unable to meet with group
+https://github.com/MatteoIBiol432/Assignment_4_Solo
 
 ```{r}
 data <- read.csv("./Cohen_CANCERSEEK_liquid_biopsy_2018_modified.csv")
@@ -17,7 +18,7 @@ summary(data)
 ```
 
 ```{r}
-boxplot(data[, 5:42])  # Assuming columns 5 to 42 contain protein concentration data
+boxplot(data[, 5:42])
 ```
  In Random Forest models, normalization is not required because the algorithm is based on decision trees, which are not sensitive to the scale of the data.
 
